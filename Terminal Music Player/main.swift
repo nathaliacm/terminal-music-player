@@ -11,7 +11,13 @@ import AVFoundation
 
 func main()
 {
-    playMusic(musicUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
+    print("Insira a URL da música que deseja tocar: ")
+    if let url = readLine(){
+        playMusic(musicUrl: url)
+    } else {
+        print("erro")
+    }
+    
     //playLocalMusic(resourceUrl: "music", fileExtension: "mp3")
 }
 
@@ -24,11 +30,16 @@ func playMusic(musicUrl: String)
             let musicData = try Data(contentsOf: url)
             let musicPlayer = try AVAudioPlayer(data: musicData)
             musicPlayer.play()
-            if let command = readLine(), command == "stop" {
-                print("flws")
-            } else {
-                print("erro")
+            if musicPlayer.isPlaying{
+                print("Musica está tocando.")
+                print("Digite \"stop\" para parar")
+                if let command = readLine(), command == "stop" {
+                    print("Tchau pessoa!")
+                } else {
+                    print("erro")
+                }
             }
+            
         }
         else {
             print("erro")
