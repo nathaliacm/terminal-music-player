@@ -11,60 +11,47 @@ import AVFoundation
 
 let bye = "Tchau pessoa!"
 
-/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3 */
-
-
-func main()
-{
-    let menu = """
-
-    --- Comandos do Player ---
-
-    Reproduzir música - play
-    Salvar música - save
-    Sair do Player - exit
-    Lista de comandos - commands
-
-    """
-    while(true) {
-        print(menu)
-        if let command = readLine() {
-            switch command {
-            case "play":
-                playMusic()
-            case "save":
-                print("standby2")
-                // saveMusic()
-            case "exit":
-                print(bye)
-                return
-            case "commands":
-                print(menu)
-            default:
-                print("\nComando inválido. Informe um comando válido (commands):\n")
+class Music: Codable {
+    var url: URL
+    var title: String = "Desconhecido"
+    var artist: String = "Desconhecido"
+    var type: String = "Desconhecido"
+    
+    init(url: URL) {
+        self.url = url
+        setMetadata()
+    }
+    
+    private func setMetadata() {
+        
+        let playerItem = AVPlayerItem(url: self.url)
+        let metadataList = playerItem.asset.metadata
+        
+        for item in metadataList {
+            if let itemKey = item.commonKey {
+                switch itemKey.rawValue {
+                case "title":
+                    self.title = item.stringValue ?? "Desconhecido"
+                case "artist":
+                    self.artist = item.stringValue ?? "Desconhecido"
+                case "type":
+                    self.type = item.stringValue ?? "Desconhecido"
+                default:
+                    continue
+                }
+            } else {
+                continue
             }
         }
     }
-    //playLocalMusic(resourceUrl: "music", fileExtension: "mp3")
-}
-
-func playMusic()
-{
-    print("Insira a URL da música que deseja tocar: ")
-    guard let musicUrl = readLine() else {
-        print("erro")
-        return
-    }
-    let urlOpt = URL(string: musicUrl)
-    do {
-        if let url = urlOpt
-        {
-            saveMusic(musicUrl: url)
-            let musicData = try Data(contentsOf: url)
+    
+    public func play() {
+        do {
+            let musicData = try Data(contentsOf: self.url)
             let musicPlayer = try AVAudioPlayer(data: musicData)
             musicPlayer.play()
             if musicPlayer.isPlaying{
-                print("Musica está tocando.")
+                print("Reproduzindo \(self.artist) - \(self.title)")
                 print("Digite \"stop\" para parar")
                 if let command = readLine(), command == "stop" {
                     print(bye)
@@ -72,15 +59,79 @@ func playMusic()
                     print("erro")
                 }
             }
-            
-        }
-        else {
-            print("erro")
+        } catch {
+            print("\(error)")
         }
     }
-    catch
-    {
-        print("\(error)")
+}
+
+/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3 */
+
+// Array de Musics
+
+func main()
+{
+     
+     
+    let menu = """
+
+    --- Comandos do Player ---
+
+    Reproduzir música - play
+    Salvar música - save
+    Listas de Reprodução - playlists
+    Lista de comandos - commands
+    Sair do Player - exit
+
+    """
+    print(menu)
+    while let command = readLine() {
+        switch command {
+        case "play":
+            let musicOpt = loadMusic()
+            if let music = musicOpt {
+                music.play()
+            } else {
+                print("erro")
+            }
+            print(menu)
+        case "save":
+            let musicOpt = loadMusic()
+            if let music = musicOpt {
+                let json = musicToJson(music: music) ?? "deu problema"
+                if let anotherMusic = jsonToMusic(json: json) {
+                    print(anotherMusic.url, anotherMusic.artist)
+                } else {
+                    print("erro")
+                }
+            } else {
+                print("erro")
+            }
+            //saveMusic()
+            print(menu)
+        case "exit":
+            print(bye)
+            return
+        case "commands":
+            print(menu)
+        default:
+            print("\nComando inválido. Informe um comando válido (commands):\n")
+        }
+    }
+    //playLocalMusic(resourceUrl: "music", fileExtension: "mp3")
+}
+
+func loadMusic() -> Music? {
+    print("Insira a URL da música: ")
+    guard let musicUrl = readLine() else {
+        return nil
+    }
+    let urlOpt = URL(string: musicUrl)
+    if let url = urlOpt {
+        let music = Music(url: url)
+        return music
+    } else {
+        return nil
     }
 }
 
@@ -111,45 +162,31 @@ func playLocalMusic(resourceUrl: String, fileExtension: String)
     RunLoop.main.run()
 }
 
-func saveMusic(musicUrl: URL) {
-    
-    let playerItem = AVPlayerItem(url: musicUrl)
-    let metadataList = playerItem.asset.metadata
-    
-    var musicTitle: String = "Desconhecido"
-    var musicArtist: String = "Desconhecido"
-    var musicType: String = "Desconhecido"
-    
-    for item in metadataList {
-        if let itemKey = item.commonKey {
-            switch itemKey.rawValue {
-            case "title":
-                musicTitle = item.stringValue ?? "Desconhecido"
-            case "artist":
-                musicArtist = item.stringValue ?? "Desconhecido"
-            case "type":
-                musicType = item.stringValue ?? "Desconhecido"
-            default:
-                continue
-            }
-        } else {
-            continue
-        }
+func musicToJson(music: Music) -> String? {
+    do {
+        let jsonEncoder = JSONEncoder()
+        let jsonData = try jsonEncoder.encode(music)
+        let json = String(data: jsonData, encoding: String.Encoding.utf8)
+        return json
+    } catch {
+        print("\(error)")
+        return nil
     }
-    print("Reproduzindo \(musicArtist) - \(musicTitle) - \(musicType)")
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+}
+
+func jsonToMusic(json: String) -> Music? {
+    do {
+        let jsonDecoder = JSONDecoder()
+        if let jsonData = json.data(using: .utf8) {
+            let music = try jsonDecoder.decode(Music.self, from: jsonData)
+            return music
+        } else {
+            return nil
+        }
+    } catch {
+        print("\(error)")
+        return nil
+    }
 }
 
 main()
