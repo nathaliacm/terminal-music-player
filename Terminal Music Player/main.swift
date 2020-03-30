@@ -9,24 +9,57 @@
 
 import AVFoundation
 
+let bye = "Tchau pessoa!"
+
+/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3 */
+
+
 func main()
 {
-    print("Insira a URL da música que deseja tocar: ")
-    if let url = readLine(){
-        playMusic(musicUrl: url)
-    } else {
-        print("erro")
+    let menu = """
+
+    --- Comandos do Player ---
+
+    Reproduzir música - play
+    Salvar música - save
+    Sair do Player - exit
+    Lista de comandos - commands
+
+    """
+    while(true) {
+        print(menu)
+        if let command = readLine() {
+            switch command {
+            case "play":
+                playMusic()
+            case "save":
+                print("standby2")
+                // saveMusic()
+            case "exit":
+                print(bye)
+                return
+            case "commands":
+                print(menu)
+            default:
+                print("\nComando inválido. Informe um comando válido (commands):\n")
+            }
+        }
     }
-    
     //playLocalMusic(resourceUrl: "music", fileExtension: "mp3")
 }
 
-func playMusic(musicUrl: String)
+func playMusic()
 {
+    print("Insira a URL da música que deseja tocar: ")
+    guard let musicUrl = readLine() else {
+        print("erro")
+        return
+    }
     let urlOpt = URL(string: musicUrl)
     do {
         if let url = urlOpt
         {
+            saveMusic(musicUrl: url)
             let musicData = try Data(contentsOf: url)
             let musicPlayer = try AVAudioPlayer(data: musicData)
             musicPlayer.play()
@@ -34,7 +67,7 @@ func playMusic(musicUrl: String)
                 print("Musica está tocando.")
                 print("Digite \"stop\" para parar")
                 if let command = readLine(), command == "stop" {
-                    print("Tchau pessoa!")
+                    print(bye)
                 } else {
                     print("erro")
                 }
@@ -76,6 +109,47 @@ func playLocalMusic(resourceUrl: String, fileExtension: String)
     }
     
     RunLoop.main.run()
+}
+
+func saveMusic(musicUrl: URL) {
+    
+    let playerItem = AVPlayerItem(url: musicUrl)
+    let metadataList = playerItem.asset.metadata
+    
+    var musicTitle: String = "Desconhecido"
+    var musicArtist: String = "Desconhecido"
+    var musicType: String = "Desconhecido"
+    
+    for item in metadataList {
+        if let itemKey = item.commonKey {
+            switch itemKey.rawValue {
+            case "title":
+                musicTitle = item.stringValue ?? "Desconhecido"
+            case "artist":
+                musicArtist = item.stringValue ?? "Desconhecido"
+            case "type":
+                musicType = item.stringValue ?? "Desconhecido"
+            default:
+                continue
+            }
+        } else {
+            continue
+        }
+    }
+    print("Reproduzindo \(musicArtist) - \(musicTitle) - \(musicType)")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }
 
 main()
