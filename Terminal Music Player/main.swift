@@ -67,7 +67,9 @@ class Music: Codable {
     }
 }
 
-/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3 */
+/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3
+    https://files.freemusicarchive.org/storage-freemusicarchive-org/music/West_Cortez_Records/David_Hilowitz/Gradual_Sunrise/David_Hilowitz_-_Gradual_Sunrise.mp3
+ */
 
 func main()
 {
@@ -78,8 +80,8 @@ func main()
     --- Comandos do Player ---
 
     Reproduzir música - play
-    Reproduzir música localmente - play local
     Salvar música - save
+    Procurar músicas - search
     Listas de Reprodução - playlists
     Lista de comandos - commands
     Sair do Player - exit
@@ -88,21 +90,24 @@ func main()
     print(menu)
     while let command = readLine() {
         switch command {
-        case "play":
-            let musicOpt = loadMusic()
+        case "play", "local":
+            // TODO - Devemos adaptar esse método para os 3 tipos de play
+            // play online - tocar músicas de um url
+            // play local - tocar músicas presentes na máquina do usuário
+            // play saved - tocar músicas salvas no Player pelo comando save
+            let musicOpt: Music?
+            if command == "play"{
+                musicOpt = loadMusic()
+            } else {
+                musicOpt = loadMusicLocal()
+            }
+            
             if let music = musicOpt {
                 music.play()
             } else {
                 print("erro")
             }
             print(menu)
-        case "play local":
-            let musicOpt = loadMusicLocal()
-            if let music = musicOpt {
-                music.play()
-            } else {
-                print("erro")
-            }
         case "save":
             let musicOpt = loadMusic()
             if let music = musicOpt {
@@ -111,6 +116,13 @@ func main()
                 print("erro")
             }
             print(menu)
+        case "search":
+            let musicOpt = searchMusicJson()
+            if let music = musicOpt {
+                print(music.url)
+            } else {
+                print("Música não encontrada.")
+            }
         case "exit":
             print(bye)
             return
@@ -123,7 +135,7 @@ func main()
 }
 
 func loadMusic() -> Music? {
-    print("Insira a URL da música: ")
+    print("Informe a URL da música: ")
     guard let musicUrl = readLine() else {
         return nil
     }
@@ -137,7 +149,7 @@ func loadMusic() -> Music? {
 }
 
 func loadMusicLocal() -> Music? {
-    print("Insira o nome junto da extensão da música: ")
+    print("Informe o nome junto da extensão da música: ")
     guard let musicFile = readLine() else {
         return nil
     }
@@ -146,30 +158,94 @@ func loadMusicLocal() -> Music? {
     return music
 }
 
-func saveMusic(music: Music, fileURL: URL) {
-    let jsonDataOpt = musicToJsonData(music: music)
-    guard let jsonData = jsonDataOpt else {
-        print("error")
-        return
+func searchMusicJson() -> Music? {
+    print("Informe o nome da música: ")
+    guard let musicName = readLine() else {
+        return nil
     }
+    let dictMusicOpt = getDictFromFile()
+    guard let dictMusic = dictMusicOpt else {
+        print("erro")
+        return nil
+    }
+    return dictMusic[musicName]
+}
+
+// Pegar o que tá no arquivo e criar um dicionario com isso
+
+func saveMusic(music: Music, fileURL: URL) {
     let fileManager = FileManager.default
     if fileManager.fileExists(atPath: fileURL.path) {
-        // Append json to file
-        do {
-            let fileHandle = try FileHandle(forWritingTo: fileURL)
-                fileHandle.seekToEndOfFile()
-                fileHandle.write(jsonData)
-                fileHandle.closeFile()
-        } catch {
-            print("Error writing to file \(error)")
+        let dictMusicOpt = getDictFromFile()
+        if var dictMusic = dictMusicOpt {
+            dictMusic[music.title] = music
+            do {
+                let jsonDataOpt = musicsToJsonData(musics: dictMusic)
+                if let jsonData = jsonDataOpt {
+                    let fileHandle = try FileHandle(forWritingTo: musicFilesURL.appendingPathComponent("musics.json"))
+                    fileHandle.write(jsonData)
+                } else {
+                    print("erro")
+                }
+            } catch {
+                print("Error appending to file \(error)")
+            }
+        } else {
+            print("erro")
         }
     } else {
-        // Create file and write json
-        fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
-        //print("arquivo criado")
+        createInitialFile(initialMusic: [music.title: music], fileURL: fileURL)
     }
     
 }
+
+func getDictFromFile() -> [String: Music]? {
+    do {
+        let fileHandle = try FileHandle(forReadingFrom: musicFilesURL.appendingPathComponent("musics.json"))
+        let jsonData = fileHandle.readDataToEndOfFile()
+        let dict = jsonDataToMusics(jsonData: jsonData)
+        return dict
+    } catch {
+        print("Error reading file \(error)")
+        return nil
+    }
+}
+
+func createInitialFile(initialMusic: [String: Music], fileURL: URL) {
+    // Create file and write json
+    let jsonEncoder = JSONEncoder()
+    let fileManager = FileManager.default
+    do {
+        let jsonData = try jsonEncoder.encode(initialMusic)
+        fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
+    } catch {
+        print("\(error)")
+    }
+    //print("arquivo criado")
+}
+
+func jsonDataToMusics(jsonData: Data) -> [String: Music]? {
+    do {
+        let jsonDecoder = JSONDecoder()
+        let musics = try jsonDecoder.decode([String: Music].self, from: jsonData)
+        return musics
+    } catch {
+        return nil
+    }
+}
+
+func musicsToJsonData(musics: [String: Music]) -> Data? {
+    do {
+        let jsonEncoder = JSONEncoder()
+        let jsonData = try jsonEncoder.encode(musics)
+        return jsonData
+    } catch {
+        print("\(error)")
+        return nil
+    }
+}
+
+main()
 
 /*func playLocalMusic(resourceUrl: String, fileExtension: String)
 {
@@ -198,44 +274,40 @@ func saveMusic(music: Music, fileURL: URL) {
     RunLoop.main.run()
 }*/
 
-func musicToJsonData(music: Music) -> Data? {
-    do {
-        let jsonEncoder = JSONEncoder()
-        let jsonData = try jsonEncoder.encode(music)
-        return jsonData
-    } catch {
-        print("\(error)")
-        return nil
-    }
-}
+//func musicToJsonData(music: Music) -> Data? {
+//    do {
+//        let jsonEncoder = JSONEncoder()
+//        let jsonData = try jsonEncoder.encode(music)
+//        return jsonData
+//    } catch {
+//        print("\(error)")
+//        return nil
+//    }
+//}
 
-func musicToJson(music: Music) -> String? {
-    do {
-        let jsonEncoder = JSONEncoder()
-        let jsonData = try jsonEncoder.encode(music)
-        let json = String(data: jsonData, encoding: String.Encoding.utf8)
-        return json
-    } catch {
-        print("\(error)")
-        return nil
-    }
-}
+//func musicToJson(music: Music) -> String? {
+//    do {
+//        let jsonEncoder = JSONEncoder()
+//        let jsonData = try jsonEncoder.encode(music)
+//        let json = String(data: jsonData, encoding: String.Encoding.utf8)
+//        return json
+//    } catch {
+//        print("\(error)")
+//        return nil
+//    }
+//}
 
-func jsonToMusic(json: String) -> Music? {
-    do {
-        let jsonDecoder = JSONDecoder()
-        if let jsonData = json.data(using: .utf8) {
-            let music = try jsonDecoder.decode(Music.self, from: jsonData)
-            return music
-        } else {
-            return nil
-        }
-    } catch {
-        print("\(error)")
-        return nil
-    }
-}
-
-main()
-
-
+//func jsonToMusic(json: String) -> Music? {
+//    do {
+//        let jsonDecoder = JSONDecoder()
+//        if let jsonData = json.data(using: .utf8) {
+//            let music = try jsonDecoder.decode(Music.self, from: jsonData)
+//            return music
+//        } else {
+//            return nil
+//        }
+//    } catch {
+//        print("\(error)")
+//        return nil
+//    }
+//}
