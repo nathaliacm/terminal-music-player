@@ -8,8 +8,10 @@
 //
 
 import AVFoundation
+import Foundation
 
 let bye = "Tchau pessoa!"
+let musicFilesURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Music Files", isDirectory: true)
 
 class Music: Codable {
     var url: URL
@@ -67,8 +69,6 @@ class Music: Codable {
 
 /* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3 */
 
-// Array de Musics
-
 func main()
 {
      
@@ -78,6 +78,7 @@ func main()
     --- Comandos do Player ---
 
     Reproduzir música - play
+    Reproduzir música localmente - play local
     Salvar música - save
     Listas de Reprodução - playlists
     Lista de comandos - commands
@@ -95,19 +96,20 @@ func main()
                 print("erro")
             }
             print(menu)
-        case "save":
-            let musicOpt = loadMusic()
+        case "play local":
+            let musicOpt = loadMusicLocal()
             if let music = musicOpt {
-                let json = musicToJson(music: music) ?? "deu problema"
-                if let anotherMusic = jsonToMusic(json: json) {
-                    print(anotherMusic.url, anotherMusic.artist)
-                } else {
-                    print("erro")
-                }
+                music.play()
             } else {
                 print("erro")
             }
-            //saveMusic()
+        case "save":
+            let musicOpt = loadMusic()
+            if let music = musicOpt {
+                saveMusic(music: music, fileURL: musicFilesURL.appendingPathComponent("Musics.json"))
+            } else {
+                print("erro")
+            }
             print(menu)
         case "exit":
             print(bye)
@@ -118,7 +120,6 @@ func main()
             print("\nComando inválido. Informe um comando válido (commands):\n")
         }
     }
-    //playLocalMusic(resourceUrl: "music", fileExtension: "mp3")
 }
 
 func loadMusic() -> Music? {
@@ -135,7 +136,42 @@ func loadMusic() -> Music? {
     }
 }
 
-func playLocalMusic(resourceUrl: String, fileExtension: String)
+func loadMusicLocal() -> Music? {
+    print("Insira o nome junto da extensão da música: ")
+    guard let musicFile = readLine() else {
+        return nil
+    }
+    let musicUrl: URL = musicFilesURL.appendingPathComponent(musicFile)
+    let music = Music(url: musicUrl)
+    return music
+}
+
+func saveMusic(music: Music, fileURL: URL) {
+    let jsonDataOpt = musicToJsonData(music: music)
+    guard let jsonData = jsonDataOpt else {
+        print("error")
+        return
+    }
+    let fileManager = FileManager.default
+    if fileManager.fileExists(atPath: fileURL.path) {
+        // Append json to file
+        do {
+            let fileHandle = try FileHandle(forWritingTo: fileURL)
+                fileHandle.seekToEndOfFile()
+                fileHandle.write(jsonData)
+                fileHandle.closeFile()
+        } catch {
+            print("Error writing to file \(error)")
+        }
+    } else {
+        // Create file and write json
+        fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
+        //print("arquivo criado")
+    }
+    
+}
+
+/*func playLocalMusic(resourceUrl: String, fileExtension: String)
 {
     print("\(resourceUrl) \(fileExtension)")
     //let urlOpt = Bundle.main.url(forResource: resourceUrl, withExtension: fileExtension)
@@ -160,6 +196,17 @@ func playLocalMusic(resourceUrl: String, fileExtension: String)
     }
     
     RunLoop.main.run()
+}*/
+
+func musicToJsonData(music: Music) -> Data? {
+    do {
+        let jsonEncoder = JSONEncoder()
+        let jsonData = try jsonEncoder.encode(music)
+        return jsonData
+    } catch {
+        print("\(error)")
+        return nil
+    }
 }
 
 func musicToJson(music: Music) -> String? {
