@@ -3,8 +3,7 @@
 //  main.swift
 //  Terminal Music Player
 //
-//  Created by Rodrigo Matos Aguiar on 10/03/20.
-//  Copyright © 2020 Rodrigo Matos Aguiar. All rights reserved.
+//  Created by Rodrigo Matos and Nathália Moura on 10/03/20.
 //
 
 /* URLs de música válidas
