@@ -34,6 +34,7 @@ class Music: Codable {
         setMetadata()
     }
     
+    // Extrai os metadados contidos em uma URL e atribui esses metadados às propriedades do objeto
     private func setMetadata() {
         
         let playerItem = AVPlayerItem(url: self.url)
@@ -57,6 +58,7 @@ class Music: Codable {
         }
     }
     
+    // Toca uma música de acordo com o valor da propriedade "url" do objeto
     public func play() {
         do {
             let musicData = try Data(contentsOf: self.url)
@@ -142,6 +144,7 @@ func main()
     }
 }
 
+// Mostra todas as músicas salvas no Player
 func showMusics() {
     let dictMusicOpt = getDictFromFile()
     // Checa se o dicionário é nulo ou vazio
@@ -154,8 +157,9 @@ func showMusics() {
     }
 }
 
+// Solicita um nome de música e remove a referência da música que possui esse nome, caso exista
 func removeMusic() {
-    print("Informe a música: ")
+    print("Informe o nome da música: ")
     guard let musicName = readLine() else {
         return
     }
@@ -185,6 +189,7 @@ func removeMusic() {
     }
 }
 
+// Solicita um arquivo de música e retorna um objeto música (optional)
 func loadMusic() -> Music? {
     print("Informe a música: ")
     guard let musicInput = readLine() else {
