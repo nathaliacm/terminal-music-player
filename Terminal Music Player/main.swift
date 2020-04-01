@@ -7,11 +7,22 @@
 //  Copyright © 2020 Rodrigo Matos Aguiar. All rights reserved.
 //
 
+/* URLs de música válidas
+ 
+ https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3
+
+ https://files.freemusicarchive.org/storage-freemusicarchive-org/music/West_Cortez_Records/David_Hilowitz/Gradual_Sunrise/David_Hilowitz_-_Gradual_Sunrise.mp3
+
+ https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Mid-Air_Machine/Vibrations__Text__Alarm_Notification_Songs/Mid-Air_Machine_-_Ampheral__Text_Notification.mp3
+ 
+*/
+
 import AVFoundation
 import Foundation
 
 let bye = "Tchau pessoa!"
 let musicFilesURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Music Files", isDirectory: true)
+let jsonURL = musicFilesURL.appendingPathComponent("musics.json")
 
 class Music: Codable {
     var url: URL
@@ -52,27 +63,21 @@ class Music: Codable {
             let musicData = try Data(contentsOf: self.url)
             let musicPlayer = try AVAudioPlayer(data: musicData)
             musicPlayer.play()
-            print("Reproduzindo \(self.artist) - \(self.title)")
+            print("\nReproduzindo \(self.artist) - \(self.title)")
             while musicPlayer.isPlaying {
                 print("Digite \"stop\" para parar")
                 if let command = readLine(), command == "stop" {
-                    print("Música encerrada.")
+                    print("\nMúsica encerrada")
                     break
                 } else {
-                    print("Comando inválido.", terminator: " ")
+                    print("Comando inválido", terminator: " ")
                 }
             }
         } catch {
-            print("\(error)")
+            print("\nNão foi possível reproduzir a música")
         }
     }
 }
-
-/* https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Chad_Crouch/Arps/Chad_Crouch_-_Shipping_Lanes.mp3
-    https://files.freemusicarchive.org/storage-freemusicarchive-org/music/West_Cortez_Records/David_Hilowitz/Gradual_Sunrise/David_Hilowitz_-_Gradual_Sunrise.mp3
- 
- https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Mid-Air_Machine/Vibrations__Text__Alarm_Notification_Songs/Mid-Air_Machine_-_Ampheral__Text_Notification.mp3
- */
 
 func main()
 {
@@ -89,7 +94,6 @@ func main()
 
     """
     let help = """
-        
     --- Ajuda ---
     
     play - toca uma música de acordo com a [entrada]
@@ -111,7 +115,7 @@ func main()
             if let music = musicOpt {
                 music.play()
             } else {
-                print("Música não encontrada.")
+                print("\nMúsica não encontrada")
             }
             print(menu)
         case "save":
@@ -119,7 +123,7 @@ func main()
             if let music = musicOpt {
                 saveMusic(music: music, fileURL: musicFilesURL.appendingPathComponent("Musics.json"))
             } else {
-                print("Entrada inválida.")
+                print("Entrada inválida")
             }
             print(menu)
         case "show":
@@ -134,15 +138,16 @@ func main()
             print(bye)
             return
         default:
-            print("\nComando inválido. Informe um comando válido (commands):\n")
+            print("Comando inválido. Informe um comando válido (commands):\n")
         }
     }
 }
 
 func showMusics() {
     let dictMusicOpt = getDictFromFile()
-    guard let dictMusic = dictMusicOpt else {
-        print("Nenhuma música salva.")
+    // Checa se o dicionário é nulo ou vazio
+    guard let dictMusic = dictMusicOpt, !dictMusic.isEmpty else {
+        print("Nenhuma música salva")
         return
     }
     for music in dictMusic.values {
@@ -155,6 +160,8 @@ func removeMusic() {
     guard let musicName = readLine() else {
         return
     }
+    // Pula uma linha por questões estéticas
+    print("")
     let dictMusicOpt = getDictFromFile()
     guard var dictMusic = dictMusicOpt else {
         print("Nenhuma música salva")
@@ -168,8 +175,7 @@ func removeMusic() {
             return
         }
         do {
-            let fileHandle = try FileHandle(forWritingTo: musicFilesURL.appendingPathComponent("musics.json"))
-            fileHandle.write(jsonData)
+            try jsonData.write(to: jsonURL)
         } catch {
             print("Não foi possível remover a música")
             return
@@ -210,28 +216,30 @@ func loadMusic() -> Music? {
 
 // Salva as informações de uma música em um arquivo .json
 func saveMusic(music: Music, fileURL: URL) {
-    let erroSave = "Não foi possível salvar a música"
+    let saveError = "\nNão foi possível salvar a música"
+    let saveSuccess = "\nMúsica salva com sucesso"
     let fileManager = FileManager.default
     if fileManager.fileExists(atPath: fileURL.path) {
         let dictMusicOpt = getDictFromFile()
         guard var dictMusic = dictMusicOpt else {
-            print(erroSave, "(dictConversionError)")
+            print(saveError, "(dictConversionError)")
             return
         }
         dictMusic[music.title] = music
+        let jsonDataOpt = musicsToJsonData(musics: dictMusic)
+        guard let jsonData = jsonDataOpt else {
+            print(saveError, "(jsonConversionError)")
+            return
+        }
         do {
-            let jsonDataOpt = musicsToJsonData(musics: dictMusic)
-            guard let jsonData = jsonDataOpt else {
-                print(erroSave, "(jsonConversionError)")
-                return
-            }
-            let fileHandle = try FileHandle(forWritingTo: musicFilesURL.appendingPathComponent("musics.json"))
-            fileHandle.write(jsonData)
+            try jsonData.write(to: jsonURL)
+            print(saveSuccess)
         } catch {
-            print("Error appending to file \(error)")
+            print(saveError)
         }
     } else {
-        createInitialFile(initialMusic: [music.title: music], fileURL: fileURL)
+        let createSuccess = createInitialFile(initialMusic: [music.title: music], fileURL: fileURL)
+        print(createSuccess ? saveSuccess : saveError)
     }
 }
 
@@ -248,23 +256,24 @@ func getDictFromFile() -> [String: Music]? {
 }
 
 // Cria um arquivo .json com um dicionário de música inicial
-func createInitialFile(initialMusic: [String: Music], fileURL: URL) {
+func createInitialFile(initialMusic: [String: Music], fileURL: URL) -> Bool {
     // Create file and write json
     let jsonEncoder = JSONEncoder()
     let fileManager = FileManager.default
     do {
         let jsonData = try jsonEncoder.encode(initialMusic)
-        fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
+        let success = fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
+        return success
     } catch {
-        print("\(error)")
+        return false
     }
     //print("arquivo criado")
 }
 
 // Converte json data para um dicionário de música (optional)
 func jsonDataToMusics(jsonData: Data) -> [String: Music]? {
+    let jsonDecoder = JSONDecoder()
     do {
-        let jsonDecoder = JSONDecoder()
         let musics = try jsonDecoder.decode([String: Music].self, from: jsonData)
         return musics
     } catch {
@@ -274,40 +283,13 @@ func jsonDataToMusics(jsonData: Data) -> [String: Music]? {
 
 // Converte um dicionário de música para json data (optional)
 func musicsToJsonData(musics: [String: Music]) -> Data? {
+    let jsonEncoder = JSONEncoder()
     do {
-        let jsonEncoder = JSONEncoder()
         let jsonData = try jsonEncoder.encode(musics)
         return jsonData
     } catch {
-        print("\(error)")
         return nil
     }
 }
 
 main()
-
-//func saveMusic(music: Music, fileURL: URL) {
-//    let fileManager = FileManager.default
-//    if fileManager.fileExists(atPath: fileURL.path) {
-//        let dictMusicOpt = getDictFromFile()
-//        if var dictMusic = dictMusicOpt {
-//            dictMusic[music.title] = music
-//            do {
-//                let jsonDataOpt = musicsToJsonData(musics: dictMusic)
-//                if let jsonData = jsonDataOpt {
-//                    let fileHandle = try FileHandle(forWritingTo: musicFilesURL.appendingPathComponent("musics.json"))
-//                    fileHandle.write(jsonData)
-//                } else {
-//                    print("erro")
-//                }
-//            } catch {
-//                print("Error appending to file \(error)")
-//            }
-//        } else {
-//            print("erro")
-//        }
-//    } else {
-//        createInitialFile(initialMusic: [music.title: music], fileURL: fileURL)
-//    }
-//
-//}
