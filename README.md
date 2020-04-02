@@ -4,8 +4,4 @@ Reprodutor de musicas no terminal. Podem ser reproduzidas músicas armazenadas l
 
 ## Capturas de tela do terminal
 
-![menu and help section](presentation/menu_help.png)
-![show and play](presentation/show_play.png)
-![save and show](presentation/save_show.png)
-![remove and show](presentation/remove_show.png)
-![remove and play](presentation/remove_play.png)
+Em breve...
