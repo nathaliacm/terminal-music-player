@@ -45,10 +45,25 @@ class Music: Codable {
                 switch itemKey.rawValue {
                 case "title":
                     self.title = item.stringValue ?? "Desconhecido"
+                    /*if self.title == "Desconhecido" {
+                        print("Nome da musica:\n")
+                        let musicName = readLine() ?? "Vazio"
+                        self.title = musicName
+                    }*/
                 case "artist":
                     self.artist = item.stringValue ?? "Desconhecido"
+                    /*if self.artist == "Desconhecido" {
+                        print("Nome do artista:\n")
+                        let artistName = readLine() ?? "Vazio"
+                        self.artist = artistName
+                    }*/
                 case "type":
                     self.type = item.stringValue ?? "Desconhecido"
+                    /*if self.type == "Desconhecido" {
+                        print("Nome do gênero:\n")
+                        let typeName = readLine() ?? "Vazio"
+                        self.type = typeName
+                    }*/
                 default:
                     continue
                 }
