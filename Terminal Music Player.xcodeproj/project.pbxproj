@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		575808D62436C77000933232 /* json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D52436C77000933232 /* json.swift */; };
+		575808D82436C7AF00933232 /* music.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D72436C7AF00933232 /* music.swift */; };
+		575808DA2436C97400933232 /* musicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D92436C97400933232 /* musicManager.swift */; };
 		57A79F7E2417DFA10005ACCD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A79F7D2417DFA10005ACCD /* main.swift */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +26,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		575808D52436C77000933232 /* json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = json.swift; sourceTree = "<group>"; };
+		575808D72436C7AF00933232 /* music.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = music.swift; sourceTree = "<group>"; };
+		575808D92436C97400933232 /* musicManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = musicManager.swift; sourceTree = "<group>"; };
 		57A79F7A2417DFA10005ACCD /* Terminal Music Player */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Terminal Music Player"; sourceTree = BUILT_PRODUCTS_DIR; };
 		57A79F7D2417DFA10005ACCD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		57A79F87241BB3A00005ACCD /* music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = music.mp3; sourceTree = "<group>"; };
@@ -60,6 +66,9 @@
 			children = (
 				57A79F88241BB3B10005ACCD /* Music Files */,
 				57A79F7D2417DFA10005ACCD /* main.swift */,
+				575808D52436C77000933232 /* json.swift */,
+				575808D72436C7AF00933232 /* music.swift */,
+				575808D92436C97400933232 /* musicManager.swift */,
 			);
 			path = "Terminal Music Player";
 			sourceTree = "<group>";
@@ -131,6 +140,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				57A79F7E2417DFA10005ACCD /* main.swift in Sources */,
+				575808DA2436C97400933232 /* musicManager.swift in Sources */,
+				575808D62436C77000933232 /* json.swift in Sources */,
+				575808D82436C7AF00933232 /* music.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
