@@ -16,68 +16,14 @@
  
 */
 
-import AVFoundation
 import Foundation
 
-let bye = "Tchau pessoa!"
+let bye = "Tchau pessoa!\n"
 let musicFilesURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Music Files", isDirectory: true)
 let jsonURL = musicFilesURL.appendingPathComponent("musics.json")
 
-class Music: Codable {
-    var url: URL
-    var title: String = "Desconhecido"
-    var artist: String = "Desconhecido"
-    var type: String = "Desconhecido"
-    
-    init(url: URL) {
-        self.url = url
-        setMetadata()
-    }
-    
-    // Extrai os metadados contidos em uma URL e atribui esses metadados às propriedades do objeto
-    private func setMetadata() {
-        
-        let playerItem = AVPlayerItem(url: self.url)
-        let metadataList = playerItem.asset.metadata
-        
-        for item in metadataList {
-            if let itemKey = item.commonKey {
-                switch itemKey.rawValue {
-                case "title":
-                    self.title = item.stringValue ?? "Desconhecido"
-                case "artist":
-                    self.artist = item.stringValue ?? "Desconhecido"
-                case "type":
-                    self.type = item.stringValue ?? "Desconhecido"
-                default:
-                    continue
-                }
-            } else {
-                continue
-            }
-        }
-    }
-    
-    // Toca uma música de acordo com o valor da propriedade "url" do objeto
-    public func play() {
-        do {
-            let musicData = try Data(contentsOf: self.url)
-            let musicPlayer = try AVAudioPlayer(data: musicData)
-            musicPlayer.play()
-            print("\nReproduzindo \(self.artist) - \(self.title)")
-            while musicPlayer.isPlaying {
-                print("Digite \"stop\" para parar")
-                if let command = readLine(), command == "stop" {
-                    print("\nMúsica encerrada")
-                    break
-                } else {
-                    print("Comando inválido", terminator: " ")
-                }
-            }
-        } catch {
-            print("\nNão foi possível reproduzir a música")
-        }
-    }
+enum IOError: Error {
+    case invalidInput
 }
 
 func main()
@@ -87,6 +33,7 @@ func main()
     --- Comandos do Player ---
 
     Reproduzir música - play
+    Baixar música - download
     Salvar música - save
     Exibir músicas salvas - show
     Remover música - remove
@@ -98,6 +45,7 @@ func main()
     --- Ajuda ---
     
     play - toca uma música de acordo com a [entrada]
+    download - baixa uma música no seu sistema de arquivos
     save - salva a música contida na URL informada
     show - mostra todas as músicas salvas
     remove - remove uma música salva
@@ -105,34 +53,98 @@ func main()
     [entrada] - uma URL de um arquivo de música, o nome de uma música armazenada no diretório Music Files ou o nome de uma música salva com o comando save
     
     """
+    let readFailedText = "Não foi possível obter a lista de músicas salvas\n"
+    let writeFailedText = "Não foi possível sobrescrever a lista de músicas salvas\n"
+    let invalidInputText = "Entrada inválida\n"
+    let loadFailedText = "Não foi possível carregar a música com a entrada fornecida\n"
     
     print(menu)
     while let command = readLine() {
-        // Adiciona uma linha vazia por motivos de estética
+        clearTerminalScreen()
         print("")
-        switch command {
+        print(menu)
+        switch command.lowercased() {
         case "play":
-            let musicOpt = loadMusic()
-            if let music = musicOpt {
-                music.play()
-            } else {
-                print("\nMúsica não encontrada")
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try music.play()
+                print("Reproduzindo \(music.artist) - \(music.title)\n")
+                print("Digite qualquer coisa para parar")
+                if readLine() != nil {
+                    print("\nMúsica encerrada\n")
+                }
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch MusicOperationError.playFailed {
+                print("Não foi possível tocar a música\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
-            print(menu)
+        case "download":
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try music.download(to: musicFilesURL.appendingPathComponent("\(musicString).mp3"))
+                print("Música baixada com sucesso\n")
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch MusicOperationError.downloadFailed {
+                print("Não foi possível baixar a música\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
+            }
         case "save":
-            let musicOpt = loadMusic()
-            if let music = musicOpt {
-                saveMusic(music: music, fileURL: musicFilesURL.appendingPathComponent("Musics.json"))
-            } else {
-                print("Entrada inválida")
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try saveMusic(music: music, fileURL: jsonURL)
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch FileManipulationError.writeFailed {
+                print(writeFailedText)
+            } catch FileManipulationError.createFailed {
+                print("Não foi possível criar a lista de músicas salvas\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
-            print(menu)
         case "show":
-            showMusics()
-            print(menu)
+            do {
+                let tracklist = try getTracklist()
+                for track in tracklist {
+                    print("\(track.0) - \(track.1)")
+                }
+                print("")
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch PlayerOperationError.emptyTracklist {
+                print("Nenhuma música salva\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
+            }
         case "remove":
-            removeMusic()
-            print(menu)
+            do {
+                let musicString = try getUserInput()
+                _ = try removeMusic(withName: musicString)
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch PlayerOperationError.trackNotFound {
+                print("Não foi possível encontrar a música com o nome fornecido\n")
+            } catch FileManipulationError.writeFailed {
+                print(writeFailedText)
+            } catch {
+                print("Erro inesperado: \(error)")
+            }
         case "help":
             print(help)
         case "exit":
@@ -144,156 +156,22 @@ func main()
     }
 }
 
-// Mostra todas as músicas salvas no Player
-func showMusics() {
-    let dictMusicOpt = getDictFromFile()
-    // Checa se o dicionário é nulo ou vazio
-    guard let dictMusic = dictMusicOpt, !dictMusic.isEmpty else {
-        print("Nenhuma música salva")
-        return
-    }
-    for music in dictMusic.values {
-        print("\(music.artist) - \(music.title)")
-    }
+// Limpa o terminal
+func clearTerminalScreen() {
+    let clear = Process()
+    clear.launchPath = "/usr/bin/clear"
+    clear.arguments = []
+    clear.launch()
+    clear.waitUntilExit()
 }
 
-// Solicita um nome de música e remove a referência da música que possui esse nome, caso exista
-func removeMusic() {
-    print("Informe o nome da música: ")
-    guard let musicName = readLine() else {
-        return
+// Pede input pro usuário
+func getUserInput() throws -> String {
+    print("Informe a música:\n")
+    guard let musicString = readLine() else {
+        throw IOError.invalidInput
     }
-    // Pula uma linha por questões estéticas
-    print("")
-    let dictMusicOpt = getDictFromFile()
-    guard var dictMusic = dictMusicOpt else {
-        print("Nenhuma música salva")
-        return
-    }
-    if dictMusic[musicName] != nil {
-        dictMusic[musicName] = nil
-        let jsonDataOpt = musicsToJsonData(musics: dictMusic)
-        guard let jsonData = jsonDataOpt else {
-            print("(jsonConversionError)")
-            return
-        }
-        do {
-            try jsonData.write(to: jsonURL)
-        } catch {
-            print("Não foi possível remover a música")
-            return
-        }
-        print("Música removida com sucesso")
-    } else {
-        print("Música inexistente")
-    }
-}
-
-// Solicita um arquivo de música e retorna um objeto música (optional)
-func loadMusic() -> Music? {
-    print("Informe a música: ")
-    guard let musicInput = readLine() else {
-        return nil
-    }
-    // Verifica se a entrada é um arquivo existente no Music Files
-    let fileURL = musicFilesURL.appendingPathComponent(musicInput)
-    if FileManager.default.fileExists(atPath: fileURL.path) {
-        let music = Music(url: fileURL)
-        return music
-    } else {
-        // Verifica se a entrada é uma música salva no JSON
-        let dictMusicOpt = getDictFromFile()
-        if let dictMusic = dictMusicOpt, dictMusic.keys.contains(musicInput) {
-                return dictMusic[musicInput]
-        } else {
-            // Verifica se a entrada é um URL
-            let urlOpt = URL(string: musicInput)
-            if let url = urlOpt {
-                let music = Music(url: url)
-                return music
-            } else {
-                return nil
-            }
-        }
-    }
-}
-
-// Salva as informações de uma música em um arquivo .json
-func saveMusic(music: Music, fileURL: URL) {
-    let saveError = "\nNão foi possível salvar a música"
-    let saveSuccess = "\nMúsica salva com sucesso"
-    let fileManager = FileManager.default
-    if fileManager.fileExists(atPath: fileURL.path) {
-        let dictMusicOpt = getDictFromFile()
-        guard var dictMusic = dictMusicOpt else {
-            print(saveError, "(dictConversionError)")
-            return
-        }
-        dictMusic[music.title] = music
-        let jsonDataOpt = musicsToJsonData(musics: dictMusic)
-        guard let jsonData = jsonDataOpt else {
-            print(saveError, "(jsonConversionError)")
-            return
-        }
-        do {
-            try jsonData.write(to: jsonURL)
-            print(saveSuccess)
-        } catch {
-            print(saveError)
-        }
-    } else {
-        let createSuccess = createInitialFile(initialMusic: [music.title: music], fileURL: fileURL)
-        print(createSuccess ? saveSuccess : saveError)
-    }
-}
-
-// Lê o arquivo .json e retorna o dicionário de músicas contido nele
-func getDictFromFile() -> [String: Music]? {
-    do {
-        let fileHandle = try FileHandle(forReadingFrom: musicFilesURL.appendingPathComponent("musics.json"))
-        let jsonData = fileHandle.readDataToEndOfFile()
-        let dict = jsonDataToMusics(jsonData: jsonData)
-        return dict
-    } catch {
-        return nil
-    }
-}
-
-// Cria um arquivo .json com um dicionário de música inicial
-func createInitialFile(initialMusic: [String: Music], fileURL: URL) -> Bool {
-    // Create file and write json
-    let jsonEncoder = JSONEncoder()
-    let fileManager = FileManager.default
-    do {
-        let jsonData = try jsonEncoder.encode(initialMusic)
-        let success = fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
-        return success
-    } catch {
-        return false
-    }
-    //print("arquivo criado")
-}
-
-// Converte json data para um dicionário de música (optional)
-func jsonDataToMusics(jsonData: Data) -> [String: Music]? {
-    let jsonDecoder = JSONDecoder()
-    do {
-        let musics = try jsonDecoder.decode([String: Music].self, from: jsonData)
-        return musics
-    } catch {
-        return nil
-    }
-}
-
-// Converte um dicionário de música para json data (optional)
-func musicsToJsonData(musics: [String: Music]) -> Data? {
-    let jsonEncoder = JSONEncoder()
-    do {
-        let jsonData = try jsonEncoder.encode(musics)
-        return jsonData
-    } catch {
-        return nil
-    }
+    return musicString
 }
 
 main()
