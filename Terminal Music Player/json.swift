@@ -5,68 +5,73 @@
 
 import Foundation
 
-enum FileResult {
+enum FileManipulationError: Error {
     case createFailed
     case readFailed
     case writeFailed
 }
 
-// Cria um arquivo .json com determinados dados
-func createFile(in fileURL: URL, with musics: [Music]) -> Bool {
-    let jsonDataOpt = musicsToJsonData(musics: musics)
-    guard let jsonData = jsonDataOpt else {
-        return false
-    }
-    let fileManager = FileManager.default
-    let success = fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
-    return success
+enum JsonConversionError: Error {
+    case conversionFromJsonFailed
+    case conversionToJsonFailed
 }
 
-// Lê o arquivo .json e retorna o dicionário de músicas contido nele
-func readFile() -> [Music]? {
+// Cria um arquivo .json com uma determinada array de músicas
+func createFile(in fileURL: URL, with musics: [Music]) throws {
+    do {
+        let jsonData = try musicsToJsonData(musics: musics)
+        let fileManager = FileManager.default
+        let success = fileManager.createFile(atPath: fileURL.path, contents: jsonData, attributes: [:])
+        if !success {
+            throw FileManipulationError.createFailed
+        }
+    } catch {
+        throw FileManipulationError.createFailed
+    }
+}
+
+// Lê o arquivo .json e retorna a array de músicas contida nele
+func readFile() throws -> [Music] {
     do {
         let fileHandle = try FileHandle(forReadingFrom: musicFilesURL.appendingPathComponent("musics.json"))
         let fileData = fileHandle.readDataToEndOfFile()
-        let musics = jsonDataToMusics(jsonData: fileData)
+        let musics = try jsonDataToMusics(jsonData: fileData)
         return musics
     } catch {
-        return nil
+        throw FileManipulationError.readFailed
     }
 }
 
-func writeFile(in fileURL: URL, with musics: [Music]) -> Bool {
-    let jsonDataOpt = musicsToJsonData(musics: musics)
-    guard let jsonData = jsonDataOpt else {
-        return false
-    }
+// Escreve uma array de músicas em um arquivo .json
+func writeFile(in fileURL: URL, with musics: [Music]) throws {
     do {
+        let jsonData = try musicsToJsonData(musics: musics)
         try jsonData.write(to: fileURL)
-        return true
     } catch {
-        return false
+        throw FileManipulationError.writeFailed
     }
 }
 
 // Funções auxiliares (de conversão)
 
-// Converte json data para um dicionário de música (optional)
-func jsonDataToMusics(jsonData: Data) -> [Music]? {
+// Converte json data para uma array de músicas
+func jsonDataToMusics(jsonData: Data) throws -> [Music] {
     let jsonDecoder = JSONDecoder()
     do {
         let musics = try jsonDecoder.decode([Music].self, from: jsonData)
         return musics
     } catch {
-        return nil
+        throw JsonConversionError.conversionFromJsonFailed
     }
 }
 
-// Converte um dicionário de música para json data (optional)
-func musicsToJsonData(musics: [Music]) -> Data? {
+// Converte uma array de músicas para json data
+func musicsToJsonData(musics: [Music]) throws -> Data {
     let jsonEncoder = JSONEncoder()
     do {
         let jsonData = try jsonEncoder.encode(musics)
         return jsonData
     } catch {
-        return nil
+        throw JsonConversionError.conversionToJsonFailed
     }
 }

@@ -22,6 +22,10 @@ let bye = "Tchau pessoa!\n"
 let musicFilesURL: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Music Files", isDirectory: true)
 let jsonURL = musicFilesURL.appendingPathComponent("musics.json")
 
+enum IOError: Error {
+    case invalidInput
+}
+
 func main()
 {
     let menu = """
@@ -49,6 +53,10 @@ func main()
     [entrada] - uma URL de um arquivo de música, o nome de uma música armazenada no diretório Music Files ou o nome de uma música salva com o comando save
     
     """
+    let readFailedText = "Não foi possível obter a lista de músicas salvas\n"
+    let writeFailedText = "Não foi possível sobrescrever a lista de músicas salvas\n"
+    let invalidInputText = "Entrada inválida\n"
+    let loadFailedText = "Não foi possível carregar a música com a entrada fornecida\n"
     
     print(menu)
     while let command = readLine() {
@@ -56,75 +64,87 @@ func main()
         print("")
         print(menu)
         switch command.lowercased() {
-        case "play", "download", "save", "remove":
-            print("Informe a música:\n")
-            guard let musicString = readLine() else {
-                print("Entrada inválida\n")
-                return
-            }
-            if command.lowercased() == "remove" {
-                let removeResult = removeMusic(withName: musicString)
-                switch removeResult {
-                case FileResult.readFailed:
-                    print("Não foi possível ler o arquivo\n")
-                case GetMusicResult.trackNotFound:
-                    print("Música não encontrada\n")
-                case RemoveMusicResult.removeSucceeded:
-                    print("Música excluida com sucesso\n")
-                case FileResult.writeFailed:
-                    print("Não foi possível sobrescrever o arquivo\n")
-                default:
-                    print("Erro desconhecido\n")
+        case "play":
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try music.play()
+                print("Reproduzindo \(music.artist) - \(music.title)\n")
+                print("Digite qualquer coisa para parar")
+                if readLine() != nil {
+                    print("\nMúsica encerrada\n")
                 }
-                continue
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch MusicOperationError.playFailed {
+                print("Não foi possível tocar a música\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
-            let musicOpt = loadMusic(from: musicString)
-            guard let music = musicOpt else {
-                print("Música inválida\n")
+        case "download":
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try music.download(to: musicFilesURL.appendingPathComponent("\(musicString).mp3"))
+                print("Música baixada com sucesso\n")
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch MusicOperationError.downloadFailed {
+                print("Não foi possível baixar a música\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
-            if command.lowercased() == "play" {
-                let playResult = music.play()
-                switch playResult {
-                case PlayResult.playFailed:
-                    print("Não foi possível tocar a música\n")
-                case PlayResult.playSucceeded:
-                    print("Reproduzindo \(music.artist) - \(music.title)\n")
-                    print("Digite qualquer coisa para parar")
-                    if let command = readLine() {
-                        print("\nMúsica encerrada\n")
-                    }
-                }
-            }
-            if command.lowercased() == "download" {
-                let downloadResult = music.download(to: musicFilesURL.appendPathComponent("\(musicString).mp3"))
-                switch downloadResult {
-                case DownloadResult.downloadSucceeded:
-                    print("Música baixada com sucesso\n")
-                case DownloadResult.downloadFailed:
-                    print("Não foi possível baixar a música\n")
-                }
-            }
-            if command.lowercased() == "save" {
-                let saveResult = saveMusic(music, jsonURL)
-                switch saveResult {
-                case FileResult.readFailed:
-                    print("Não foi possível ler o arquivo\n")
-                case FileResult.createFailed:
-                    print("Não foi possível criar o arquivo\n")
-                case FileResult.writeFailed:
-                    print("Não foi possível sobrescrever o arquivo\n")
-                case SaveResult.saveSucceeded:
-                    print("Música salva com sucesso\n")
-                default:
-                    print("Erro desconhecido\n")
-                }
+        case "save":
+            do {
+                let musicString = try getUserInput()
+                let music = try loadMusic(from: musicString)
+                try saveMusic(music: music, fileURL: jsonURL)
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch PlayerOperationError.loadFailed {
+                print(loadFailedText)
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch FileManipulationError.writeFailed {
+                print(writeFailedText)
+            } catch FileManipulationError.createFailed {
+                print("Não foi possível criar a lista de músicas salvas\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
         case "show":
-            let tracklist = getTracklist()
-            for track in tracklist {
-                print("\(track.0) - \(track.1)")
+            do {
+                let tracklist = try getTracklist()
+                for track in tracklist {
+                    print("\(track.0) - \(track.1)")
+                }
+                print("")
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch PlayerOperationError.emptyTracklist {
+                print("Nenhuma música salva\n")
+            } catch {
+                print("Erro inesperado: \(error)\n")
             }
-            print("")
+        case "remove":
+            do {
+                let musicString = try getUserInput()
+                _ = try removeMusic(withName: musicString)
+            } catch IOError.invalidInput {
+                print(invalidInputText)
+            } catch FileManipulationError.readFailed {
+                print(readFailedText)
+            } catch PlayerOperationError.trackNotFound {
+                print("Não foi possível encontrar a música com o nome fornecido\n")
+            } catch FileManipulationError.writeFailed {
+                print(writeFailedText)
+            } catch {
+                print("Erro inesperado: \(error)")
+            }
         case "help":
             print(help)
         case "exit":
@@ -143,6 +163,15 @@ func clearTerminalScreen() {
     clear.arguments = []
     clear.launch()
     clear.waitUntilExit()
+}
+
+// Pede input pro usuário
+func getUserInput() throws -> String {
+    print("Informe a música:\n")
+    guard let musicString = readLine() else {
+        throw IOError.invalidInput
+    }
+    return musicString
 }
 
 main()

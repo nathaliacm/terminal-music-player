@@ -5,6 +5,11 @@
 
 import AVFoundation
 
+enum MusicOperationError: Error {
+    case playFailed
+    case downloadFailed
+}
+
 class Music: Codable {
     var url: URL
     var title: String = "Desconhecido"
@@ -55,20 +60,14 @@ class Music: Codable {
         }
     }
     
-    enum PlayResult {
-        case playSucceeded
-        case playFailed
-    }
-    
     // Toca uma música de acordo com o valor da propriedade "url" do objeto
-    public func play() -> PlayResult {
+    public func play() throws {
         do {
             let musicData = try Data(contentsOf: self.url)
             let musicPlayer = try AVAudioPlayer(data: musicData)
             musicPlayer.play()
-            return PlayResult.playSucceeded
         } catch {
-            return PlayResult.playFailed
+            throw MusicOperationError.playFailed
         }
     }
             
@@ -88,21 +87,13 @@ class Music: Codable {
 //        }
 //    }
     
-    enum DownloadResult {
-        case downloadSucceeded
-        case downloadFailed
-    }
-    
     // Tenta baixar uma música de um determinado URL
-    public func download(to fileURL: URL) -> DownloadResult {
+    public func download(to fileURL: URL) throws {
         do {
             let musicData = try Data(contentsOf: self.url)
             try musicData.write(to: fileURL)
-            return DownloadResult.downloadSucceeded
-            //print("\nMúsica baixada com sucesso")
         } catch {
-            return DownloadResult.downloadFailed
-            //print("\nNão foi possível baixar a música")
+            throw MusicOperationError.downloadFailed
         }
     }
 }

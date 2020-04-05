@@ -7,28 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		575808D62436C77000933232 /* json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D52436C77000933232 /* json.swift */; };
-		575808D82436C7AF00933232 /* music.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D72436C7AF00933232 /* music.swift */; };
-		575808DA2436C97400933232 /* musicManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D92436C97400933232 /* musicManager.swift */; };
-		57A79F7E2417DFA10005ACCD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A79F7D2417DFA10005ACCD /* main.swift */; };
+		575808DD2437141600933232 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A79F7D2417DFA10005ACCD /* main.swift */; };
+		575808DE2437142000933232 /* json.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D52436C77000933232 /* json.swift */; };
+		575808DF2437142800933232 /* player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D92436C97400933232 /* player.swift */; };
+		575808E02437143000933232 /* music.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575808D72436C7AF00933232 /* music.swift */; };
+		575808F8243A903000933232 /* Terminal Music Player in CopyFiles */ = {isa = PBXBuildFile; fileRef = 57A79F7A2417DFA10005ACCD /* Terminal Music Player */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		57A79F782417DFA10005ACCD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
+			buildActionMask = 12;
+			dstPath = "$(PROJECT_DIR)/bin";
 			dstSubfolderSpec = 0;
 			files = (
+				575808F8243A903000933232 /* Terminal Music Player in CopyFiles */,
 			);
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		575808D52436C77000933232 /* json.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = json.swift; sourceTree = "<group>"; };
 		575808D72436C7AF00933232 /* music.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = music.swift; sourceTree = "<group>"; };
-		575808D92436C97400933232 /* musicManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = musicManager.swift; sourceTree = "<group>"; };
+		575808D92436C97400933232 /* player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = player.swift; sourceTree = "<group>"; };
 		57A79F7A2417DFA10005ACCD /* Terminal Music Player */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Terminal Music Player"; sourceTree = BUILT_PRODUCTS_DIR; };
 		57A79F7D2417DFA10005ACCD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		57A79F87241BB3A00005ACCD /* music.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = music.mp3; sourceTree = "<group>"; };
@@ -68,7 +70,7 @@
 				57A79F7D2417DFA10005ACCD /* main.swift */,
 				575808D52436C77000933232 /* json.swift */,
 				575808D72436C7AF00933232 /* music.swift */,
-				575808D92436C97400933232 /* musicManager.swift */,
+				575808D92436C97400933232 /* player.swift */,
 			);
 			path = "Terminal Music Player";
 			sourceTree = "<group>";
@@ -139,10 +141,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				57A79F7E2417DFA10005ACCD /* main.swift in Sources */,
-				575808DA2436C97400933232 /* musicManager.swift in Sources */,
-				575808D62436C77000933232 /* json.swift in Sources */,
-				575808D82436C7AF00933232 /* music.swift in Sources */,
+				575808DD2437141600933232 /* main.swift in Sources */,
+				575808DE2437142000933232 /* json.swift in Sources */,
+				575808DF2437142800933232 /* player.swift in Sources */,
+				575808E02437143000933232 /* music.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
